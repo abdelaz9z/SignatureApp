@@ -3,18 +3,21 @@ package com.casecode.signature
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Environment
-import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.github.gcacace.signaturepad.views.SignaturePad
-import com.itextpdf.io.image.ImageDataFactory
-import com.itextpdf.io.source.ByteArrayOutputStream
-import com.itextpdf.kernel.pdf.PdfDocument
-import com.itextpdf.kernel.pdf.PdfReader
-import com.itextpdf.kernel.pdf.PdfWriter
-import com.itextpdf.layout.Document
-import com.itextpdf.layout.element.Image
-import com.itextpdf.layout.property.UnitValue
+import com.itextpdf.text.Document
+import com.itextpdf.text.Element
+import com.itextpdf.text.Image
+import com.itextpdf.text.pdf.PdfCopy
+import com.itextpdf.text.pdf.PdfReader
+import com.itextpdf.text.pdf.PdfStamper
+import com.itextpdf.text.pdf.PdfWriter
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,30 +54,39 @@ class MainActivity : AppCompatActivity() {
             val transparentSignatureBitmap = mSignaturePad.transparentSignatureBitmap
             val signatureSvg = mSignaturePad.signatureSvg
 
-            createPdfWithImage(signatureBitmap,"null")
+            addImageInPdfNew(transparentSignatureBitmap)
         }
-    }
-
-    fun createPdfWithImage(bitmap: Bitmap, filePath: String) {
-//        val pdf = PdfDocument(PdfWriter(filePath))
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val pdf = PdfDocument(PdfReader("$downloadsDir/test.pdf"), PdfWriter("output.pdf"))
-        val document = Document(pdf)
-        val image = Image(ImageDataFactory.create(bitmapToByteArray(bitmap)))
-        image.width = UnitValue.createPercentValue(100f)
-        document.add(image)
-        document.close()
-    }
-
-    private fun bitmapToByteArray(bitmap: Bitmap): ByteArray {
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        return stream.toByteArray()
     }
 
     companion object {
         private const val TAG = "MainActivity"
     }
+
+    private fun addImageInPdfNew(bitmap: Bitmap) {
+        // Add image to PDF file
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        val outputFile = File(downloadsDir, "test2.pdf")
+
+        val outputStream = FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
+
+        val reader = PdfReader(outputFile.inputStream())
+        val stamper = PdfStamper(reader, outputStream)
+
+        val page = 1 // Specify the page number where you want to add the image
+
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val image = Image.getInstance(stream.toByteArray())
+        image.setAbsolutePosition(100f, 100f) // Specify the position of the image on the page
+
+        val content = stamper.getOverContent(page)
+        content.addImage(image)
+
+        stamper.close()
+        reader.close()
+        outputStream.close()
+    }
+
 
 }
