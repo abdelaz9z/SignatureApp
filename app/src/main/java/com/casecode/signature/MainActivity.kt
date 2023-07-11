@@ -73,11 +73,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun savePdfToPublicDirectory() {
-        // Add image to PDF file
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val outputFile = File(downloadsDir, "HyperOne.pdf")
-
-        val outputStream = FileOutputStream(outputFile) // Specify the output file name or path
         val imageUrl =
             "http://10.2.1.220:8080/HyperOneBusiness/api_development_v1_prod/login/signature/35389.gif"
 
@@ -114,39 +109,6 @@ class MainActivity : AppCompatActivity() {
         clearButton.setOnClickListener {
             mSignaturePad.clear()
         }
-        val imageUrl =
-            "http://10.2.1.220:8080/HyperOneBusiness/api_development_v1_prod/login/signature/35389.gif"
-
-        Picasso.get().load(imageUrl).into(object : com.squareup.picasso.Target {
-            override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
-                if (bitmap != null) {
-                    val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false)
-                    image.setImageBitmap(resizedBitmap)
-                    val bitmaps = listOf(resizedBitmap, resizedBitmap, resizedBitmap)
-                    val positions = listOf(
-                        Pair(20f, 5f),   // Position for image1
-                        Pair(250f, 5f),  // Position for image2
-                        Pair(470f, 5f)  // Position for image3
-                    )
-                   // addImageInPdfNew(resizedBitmap,resizedBitmap,resizedBitmap)
-
-                   addImageInPdfLoop(bitmaps,positions)
-
-
-
-                } else {
-                    Toast.makeText(this@MainActivity, "Failed to download image", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onBitmapFailed(e: Exception?, errorDrawable: Drawable?) {
-                Toast.makeText(this@MainActivity, "Failed to download image", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-                // Do nothing
-            }
-        })
 
         signedButton.setOnClickListener {
             val signatureBitmap = mSignaturePad.signatureBitmap
@@ -158,16 +120,25 @@ class MainActivity : AppCompatActivity() {
 
         // Check if the bitmap is not null before using it
 
-//        startSigningButton.setOnClickListener {
-//            checkWriteStoragePermission()
-//        }
+        startSigningButton.setOnClickListener {
+            checkWriteStoragePermission()
+        }
     }
 
     private fun downloadImageAndProcess(imageUrl: String ) {
         Picasso.get().load(imageUrl).into(object : com.squareup.picasso.Target {
             override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
                 if (bitmap != null) {
-                    //addImageInPdfNew(bitmap,bitmap,bitmap)
+                    val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false)
+                    val bitmaps = listOf(resizedBitmap, resizedBitmap, resizedBitmap)
+                    val positions = listOf(
+                        Pair(20f, 5f),   // Position for image1
+                        Pair(250f, 5f),  // Position for image2
+                        Pair(470f, 5f)  // Position for image3
+                    )
+
+                    addImageInPdf(bitmaps,positions)
+
 
                 } else {
                     Toast.makeText(this@MainActivity, "Failed to download image", Toast.LENGTH_SHORT).show()
@@ -187,65 +158,16 @@ class MainActivity : AppCompatActivity() {
 
 }
 
-private fun addImageInPdfNew(bitmap1:Bitmap,bitmap2:Bitmap,bitmap3:Bitmap){
-    // Add image to PDF file
-    val downloadsDir =
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val outputFile = File(downloadsDir, "HyperOne.pdf")
 
+private fun addImageInPdf(bitmaps: List<Bitmap>, positions: List<Pair<Float, Float>>){
+    // Add image to PDF file
+    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val outputFile = File(downloadsDir, "HyperOne.pdf")
     val outputStream =
         FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
-
     val reader = PdfReader(outputFile.inputStream())
     val stamper = PdfStamper(reader, outputStream)
-
-
-    val page = 1 // Specify the page number where you want to add the image
-
-    val stream1 = ByteArrayOutputStream()
-    bitmap1.compress(Bitmap.CompressFormat.PNG, 100, stream1)
-    val image1 = Image.getInstance(stream1.toByteArray())
-    image1.setAbsolutePosition(20f, 5f) // Specify the position of the image on the page 20 ,250, 470
-
-    val stream2 = ByteArrayOutputStream()
-    bitmap2.compress(Bitmap.CompressFormat.PNG, 100, stream2)
-    val image2 = Image.getInstance(stream2.toByteArray())
-    image2.setAbsolutePosition(250f, 5f)
-
-    val stream3 = ByteArrayOutputStream()
-    bitmap3.compress(Bitmap.CompressFormat.PNG, 100, stream3)
-    val image3 = Image.getInstance(stream3.toByteArray())
-    image3.setAbsolutePosition(470f, 5f)
-
-    val content = stamper.getOverContent(page)
-    content.addImage(image1)
-    content.addImage(image3)
-    content.addImage(image2)
-    val content2 = stamper.getOverContent(2)
-    content2.addImage(image1)
-    content2.addImage(image3)
-    content2.addImage(image2)
-
-
-    stamper.close()
-    reader.close()
-    outputStream.close()
-}
-
-private fun addImageInPdfLoop(bitmaps: List<Bitmap>, positions: List<Pair<Float, Float>>){
-    // Add image to PDF file
-    val downloadsDir =
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val outputFile = File(downloadsDir, "HyperOne.pdf")
-
-    val outputStream =
-        FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
-
-
-    val reader = PdfReader(outputFile.inputStream())
-    val stamper = PdfStamper(reader, outputStream)
-
-    for (index in 1 until reader.numberOfPages+1) {
+    for (index in 1..reader.numberOfPages) {
         for (i in bitmaps.indices){
             val stream = ByteArrayOutputStream()
             bitmaps[i].compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -256,9 +178,7 @@ private fun addImageInPdfLoop(bitmaps: List<Bitmap>, positions: List<Pair<Float,
             val content = stamper.getOverContent(index)
             content.addImage(image)
         }
-
     }
-
     stamper.close()
     reader.close()
     outputStream.close()
