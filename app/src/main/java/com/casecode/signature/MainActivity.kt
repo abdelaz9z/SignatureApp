@@ -122,7 +122,17 @@ class MainActivity : AppCompatActivity() {
                 if (bitmap != null) {
                     val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false)
                     image.setImageBitmap(resizedBitmap)
+                    val bitmaps = listOf(resizedBitmap, resizedBitmap, resizedBitmap)
+                    val pageNumbers = listOf(1, 2) // Example page numbers
+                    val positions = listOf(
+                        Pair(20f, 5f),   // Position for image1
+                        Pair(250f, 5f),  // Position for image2
+                        Pair(470f, 5f)  // Position for image3
+                    )
                     addImageInPdfNew(resizedBitmap,resizedBitmap,resizedBitmap)
+
+                   // addImageInPdfLoop(bitmaps,pageNumbers,positions)
+
 
 
                 } else {
@@ -178,7 +188,7 @@ class MainActivity : AppCompatActivity() {
 
 }
 
-private fun addImageInPdfNew(bitmap1: Bitmap,bitmap2: Bitmap,bitmap3: Bitmap) {
+private fun addImageInPdfNew(bitmap1:Bitmap,bitmap2:Bitmap,bitmap3:Bitmap){
     // Add image to PDF file
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -222,3 +232,60 @@ private fun addImageInPdfNew(bitmap1: Bitmap,bitmap2: Bitmap,bitmap3: Bitmap) {
     outputStream.close()
 }
 
+private fun addImageInPdfLoop(bitmaps: List<Bitmap>, pageNumbers: List<Int>, positions: List<Pair<Float, Float>>){
+    // Add image to PDF file
+    val downloadsDir =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val outputFile = File(downloadsDir, "HyperOne.pdf")
+
+    val outputStream =
+        FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
+
+    val reader = PdfReader(outputFile.inputStream())
+    val stamper = PdfStamper(reader, outputStream)
+
+
+    for (i in bitmaps.indices) {
+        val stream = ByteArrayOutputStream()
+        bitmaps[i].compress(Bitmap.CompressFormat.PNG, 100, stream)
+        val image = Image.getInstance(stream.toByteArray())
+        val (x, y) = positions[i]
+        image.setAbsolutePosition(x, y)
+
+        val content = stamper.getOverContent(pageNumbers[i])
+        content.addImage(image)
+    }
+
+
+
+//    val page = 1 // Specify the page number where you want to add the image
+//
+//    val stream1 = ByteArrayOutputStream()
+//    bitmap1.compress(Bitmap.CompressFormat.PNG, 100, stream1)
+//    val image1 = Image.getInstance(stream1.toByteArray())
+//    image1.setAbsolutePosition(20f, 5f) // Specify the position of the image on the page 20 ,250, 470
+//
+//    val stream2 = ByteArrayOutputStream()
+//    bitmap2.compress(Bitmap.CompressFormat.PNG, 100, stream2)
+//    val image2 = Image.getInstance(stream2.toByteArray())
+//    image2.setAbsolutePosition(250f, 5f)
+//
+//    val stream3 = ByteArrayOutputStream()
+//    bitmap3.compress(Bitmap.CompressFormat.PNG, 100, stream3)
+//    val image3 = Image.getInstance(stream3.toByteArray())
+//    image3.setAbsolutePosition(470f, 5f)
+//
+//    val content = stamper.getOverContent(page)
+//    content.addImage(image1)
+//    content.addImage(image3)
+//    content.addImage(image2)
+//    val content2 = stamper.getOverContent(2)
+//    content2.addImage(image1)
+//    content2.addImage(image3)
+//    content2.addImage(image2)
+
+
+    stamper.close()
+    reader.close()
+    outputStream.close()
+}
