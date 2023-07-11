@@ -34,12 +34,15 @@ import java.io.FileInputStream
 class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_REQUEST_CODE = 100
+    val imageUrlMap = mutableMapOf<String, String>()
+
+
 
     private fun checkWriteStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted, proceed with your task
-                savePdfToPublicDirectory()
+                downloadImageAndProcess(imageUrlMap)
             } else {
                 requestPermissions(
                     arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
@@ -48,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             // For devices running below Android M, no runtime permission is required
-            savePdfToPublicDirectory()
+            downloadImageAndProcess(imageUrlMap)
         }
     }
 
@@ -61,23 +64,12 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Permission granted, proceed with your task
-                savePdfToPublicDirectory()
+                downloadImageAndProcess(imageUrlMap)
             } else {
-                val imageUrl =
-                    "http://10.2.1.220:8080/HyperOneBusiness/api_development_v1_prod/login/signature/35389.gif"
-
-                downloadImageAndProcess(imageUrl)
+                downloadImageAndProcess(imageUrlMap)
                 // Permission denied, handle it accordingly (e.g., show an error message)
             }
         }
-    }
-
-    private fun savePdfToPublicDirectory() {
-        val imageUrl =
-            "http://10.2.1.220:8080/HyperOneBusiness/api_development_v1_prod/login/signature/35389.gif"
-
-        downloadImageAndProcess(imageUrl)
-
     }
 
     @SuppressLint("MissingInflatedId")
@@ -89,8 +81,11 @@ class MainActivity : AppCompatActivity() {
         val startSigningButton = findViewById<Button>(R.id.btn_start_signing)
         val signedButton = findViewById<Button>(R.id.btn_signed)
         val clearButton = findViewById<Button>(R.id.btn_clear)
-        val image = findViewById<ImageView>(R.id.imageView2)
 
+
+        imageUrlMap[Constants.STORE_KEY] = Constants.IMAGE_URL
+        imageUrlMap[Constants.WORKER_KEY] = Constants.IMAGE_URL
+        imageUrlMap[Constants.KEEPER_KEY] = Constants.IMAGE_URL
 
         mSignaturePad.setOnSignedListener(object : SignaturePad.OnSignedListener {
             override fun onStartSigning() {
@@ -125,19 +120,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun downloadImageAndProcess(imageUrl: String ) {
-        Picasso.get().load(imageUrl).into(object : com.squareup.picasso.Target {
+    private fun downloadImageAndProcess(imageUrl: Map<String, String>) {
+        val bitmaps = mutableMapOf<String, Bitmap>()
+
+        val target = object : com.squareup.picasso.Target {
             override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
                 if (bitmap != null) {
                     val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false)
-                    val bitmaps = listOf(resizedBitmap, resizedBitmap, resizedBitmap)
-                    val positions = listOf(
-                        Pair(20f, 5f),   // Position for image1
-                        Pair(250f, 5f),  // Position for image2
-                        Pair(470f, 5f)  // Position for image3
-                    )
+                    for ((key, value) in imageUrl) {
+                        if (value == imageUrl[key]) {
+                            bitmaps[key] = resizedBitmap
+                        }
+                    }
 
-                    addImageInPdf(bitmaps,positions)
+                    if (bitmaps.size == imageUrl.size) {
+                        val positions = listOf(
+                            Pair(20f, 5f),   // Position for "KEEPER_KEY"
+                            Pair(250f, 5f),  // Position for "WORKER_KEY"
+                            Pair(470f, 5f)   // Position for "STORE_KEY"
+                        )
+
+                        addImageInPdf(bitmaps, positions)
+                    }
                 } else {
                     Toast.makeText(this@MainActivity, "Failed to download image", Toast.LENGTH_SHORT).show()
                 }
@@ -150,34 +154,63 @@ class MainActivity : AppCompatActivity() {
             override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
                 // Do nothing
             }
-        })
+        }
+
+        for ((_, imageUrlValue) in imageUrl) {
+            Picasso.get().load(imageUrlValue).into(target)
+        }
     }
-
-
 }
 
-
-private fun addImageInPdf(bitmaps: List<Bitmap>, positions: List<Pair<Float, Float>>){
+private fun addImageInPdf(bitmaps: Map<String, Bitmap>, positions: List<Pair<Float, Float>>) {
     // Add image to PDF file
     val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
     val outputFile = File(downloadsDir, "HyperOne.pdf")
-    val outputStream =
-        FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
+    val outputStream = FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
     val reader = PdfReader(outputFile.inputStream())
     val stamper = PdfStamper(reader, outputStream)
-    for (index in 1..reader.numberOfPages) {
-        for (i in bitmaps.indices){
-            val stream = ByteArrayOutputStream()
-            bitmaps[i].compress(Bitmap.CompressFormat.PNG, 100, stream)
-            val image = Image.getInstance(stream.toByteArray())
-            val (x, y) = positions[i]
-            image.setAbsolutePosition(x, y)
 
-            val content = stamper.getOverContent(index)
-            content.addImage(image)
+    for (index in 1..reader.numberOfPages) {
+        for ((key, bitmap) in bitmaps) {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            val image = Image.getInstance(stream.toByteArray())
+            for (pos in 0 until  positions.size){
+                val (x, y) = positions[pos]
+                image.setAbsolutePosition(x, y)
+                val content = stamper.getOverContent(index)
+                content.addImage(image)
+            }
         }
     }
+
     stamper.close()
     reader.close()
     outputStream.close()
 }
+
+
+//private fun addImageInPdf(bitmaps: List<Bitmap>, positions: List<Pair<Float, Float>>){
+//    // Add image to PDF file
+//    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+//    val outputFile = File(downloadsDir, "HyperOne.pdf")
+//    val outputStream =
+//        FileOutputStream(File(downloadsDir, "modified.pdf")) // Specify the output file name or path
+//    val reader = PdfReader(outputFile.inputStream())
+//    val stamper = PdfStamper(reader, outputStream)
+//    for (index in 1..reader.numberOfPages) {
+//        for (i in bitmaps.indices){
+//            val stream = ByteArrayOutputStream()
+//            bitmaps[i].compress(Bitmap.CompressFormat.PNG, 100, stream)
+//            val image = Image.getInstance(stream.toByteArray())
+//            val (x, y) = positions[i]
+//            image.setAbsolutePosition(x, y)
+//
+//            val content = stamper.getOverContent(index)
+//            content.addImage(image)
+//        }
+//    }
+//    stamper.close()
+//    reader.close()
+//    outputStream.close()
+//}
