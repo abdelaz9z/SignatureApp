@@ -138,8 +138,6 @@ class MainActivity : AppCompatActivity() {
                     )
 
                     addImageInPdf(bitmaps,positions)
-
-
                 } else {
                     Toast.makeText(this@MainActivity, "Failed to download image", Toast.LENGTH_SHORT).show()
                 }
