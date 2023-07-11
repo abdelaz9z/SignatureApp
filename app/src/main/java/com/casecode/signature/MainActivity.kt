@@ -123,7 +123,6 @@ class MainActivity : AppCompatActivity() {
                     val resizedBitmap = Bitmap.createScaledBitmap(bitmap, 50, 50, false)
                     image.setImageBitmap(resizedBitmap)
                     val bitmaps = listOf(resizedBitmap, resizedBitmap, resizedBitmap)
-                    val pageNumbers = listOf(1, 2) // Example page numbers
                     val positions = listOf(
                         Pair(20f, 5f),   // Position for image1
                         Pair(250f, 5f),  // Position for image2
@@ -131,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                     )
                    // addImageInPdfNew(resizedBitmap,resizedBitmap,resizedBitmap)
 
-                   addImageInPdfLoop(bitmaps,pageNumbers,positions)
+                   addImageInPdfLoop(bitmaps,positions)
 
 
 
@@ -200,6 +199,7 @@ private fun addImageInPdfNew(bitmap1:Bitmap,bitmap2:Bitmap,bitmap3:Bitmap){
     val reader = PdfReader(outputFile.inputStream())
     val stamper = PdfStamper(reader, outputStream)
 
+
     val page = 1 // Specify the page number where you want to add the image
 
     val stream1 = ByteArrayOutputStream()
@@ -232,7 +232,7 @@ private fun addImageInPdfNew(bitmap1:Bitmap,bitmap2:Bitmap,bitmap3:Bitmap){
     outputStream.close()
 }
 
-private fun addImageInPdfLoop(bitmaps: List<Bitmap>, pageNumbers: List<Int>, positions: List<Pair<Float, Float>>){
+private fun addImageInPdfLoop(bitmaps: List<Bitmap>, positions: List<Pair<Float, Float>>){
     // Add image to PDF file
     val downloadsDir =
         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -245,7 +245,7 @@ private fun addImageInPdfLoop(bitmaps: List<Bitmap>, pageNumbers: List<Int>, pos
     val reader = PdfReader(outputFile.inputStream())
     val stamper = PdfStamper(reader, outputStream)
 
-    for (index in pageNumbers.indices) {
+    for (index in 1 until reader.numberOfPages+1) {
         for (i in bitmaps.indices){
             val stream = ByteArrayOutputStream()
             bitmaps[i].compress(Bitmap.CompressFormat.PNG, 100, stream)
@@ -253,7 +253,7 @@ private fun addImageInPdfLoop(bitmaps: List<Bitmap>, pageNumbers: List<Int>, pos
             val (x, y) = positions[i]
             image.setAbsolutePosition(x, y)
 
-            val content = stamper.getOverContent(pageNumbers[index])
+            val content = stamper.getOverContent(index)
             content.addImage(image)
         }
 
