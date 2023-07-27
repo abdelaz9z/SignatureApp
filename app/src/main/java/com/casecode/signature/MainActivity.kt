@@ -32,7 +32,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDialogListener {
 
     private val PERMISSION_REQUEST_CODE = 100
     val signatureMap = mutableMapOf<String, Bitmap?>()
@@ -105,7 +105,17 @@ class MainActivity : AppCompatActivity() {
         createPdfButton2.setOnClickListener {
             getSignatureFromServer("1111")
         }
+
+
+
         createPdfButton1.setOnClickListener {
+            // Show the dialog when needed, passing the text you want to display in the dialog
+            val dialogText = "Dialog Title"
+            val dialog = SignatureDialogFragment()
+            val bundle = Bundle()
+            bundle.putString("title", dialogText)
+            dialog.arguments = bundle
+            dialog.show(supportFragmentManager, "SignatureDialog")
         }
     }
 
@@ -263,6 +273,7 @@ class MainActivity : AppCompatActivity() {
                 }
             })
     }
+
     private fun bitmapToString(bitmap: Bitmap): String {
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream) // You can choose a different compression format and quality if desired
@@ -273,6 +284,18 @@ class MainActivity : AppCompatActivity() {
     private fun stringToBitmap(imageString: String): Bitmap {
         val imageData: ByteArray = Base64.decode(imageString, Base64.DEFAULT)
         return BitmapFactory.decodeByteArray(imageData, 0, imageData.size)
+    }
+
+
+    //===================THE SIGNATURE DIALOG==============================
+
+    override fun onSignatureClear() {
+    }
+
+    override fun onSignatureSave(signatureBitmap: Bitmap) {
+    }
+
+    override fun onClose() {
     }
 
 }
