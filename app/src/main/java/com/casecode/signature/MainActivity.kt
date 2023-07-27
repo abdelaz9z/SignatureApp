@@ -188,6 +188,32 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
             })
     }
 
+    private fun saveVendorSignatureToServer(orderNumber: String, bitmap: Bitmap) {
+        RetrofitClient.hyperoneApiService().vendorSignature(orderNumber, bitmapToString(bitmap))
+            .enqueue(object : Callback<ResponseBody> {
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body()
+
+                        // Handle the response
+
+                        Log.i("TAG", "vendor signature saved ")
+                    } else {
+                        // Handle the error
+                        Log.d("TAG", "onResponse() returned: ${response.message()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    // Handle the error
+                    Log.d("TAG", "Handle the error: ${t.message}")
+                }
+            })
+    }
+
     private fun checkWriteStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {

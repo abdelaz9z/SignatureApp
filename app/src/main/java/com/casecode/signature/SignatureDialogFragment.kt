@@ -56,7 +56,7 @@ class SignatureDialogFragment : DialogFragment() {
         }
 
         btnConfirmation.setOnClickListener {
-            val signatureBitmap = signaturePad.signatureBitmap
+            val signatureBitmap = signaturePad.transparentSignatureBitmap
             listener?.onSignatureSave(signatureBitmap)
             dismiss()
         }

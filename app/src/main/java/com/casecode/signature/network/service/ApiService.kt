@@ -23,6 +23,15 @@ interface ApiService {
     ): Call<ResponseBody>
 
     @FormUrlEncoded
+    @POST("signatures/vendor_signature.php")
+    fun vendorSignature(
+        @Field("ORDER_NUMBER") orderNumber: String?,
+        @Field("VENDOR_SIGNATURE") receivingSignature: String
+    ): Call<ResponseBody>
+
+
+
+    @FormUrlEncoded
     @POST("signatures/get_signature.php")
     fun getSignature(
         @Field("ORDER_NUMBER") orderNumber: String?
