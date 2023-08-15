@@ -22,7 +22,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
         android:text="Keep Signed"
-        app:layout_constraintBottom_toTopOf="@+id/create_pdf_1"
+        app:layout_constraintBottom_toTopOf="@+id/show_dialog_btn"
         app:layout_constraintStart_toStartOf="parent"
         />
 
@@ -73,7 +73,7 @@
         />
 
     <Button
-        android:id="@+id/create_pdf_1"
+        android:id="@+id/show_dialog_btn"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="32dp"
@@ -84,14 +84,14 @@
         />
 
     <Button
-        android:id="@+id/create_pdf_2"
+        android:id="@+id/create_pdf"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="32dp"
         android:layout_marginBottom="8dp"
-        android:text="create pdf with 2 "
+        android:text="create pdf"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/create_pdf_1"
+        app:layout_constraintEnd_toStartOf="@+id/show_dialog_btn"
         app:layout_constraintStart_toStartOf="parent"
         />
 

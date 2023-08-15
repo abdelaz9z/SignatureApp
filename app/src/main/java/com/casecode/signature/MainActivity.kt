@@ -5,7 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -13,8 +13,6 @@ import android.util.Base64
 import android.util.Log
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.casecode.signature.model.SignatureResponse
 import com.casecode.signature.network.client.RetrofitClient
@@ -22,7 +20,6 @@ import com.github.gcacace.signaturepad.views.SignaturePad
 import com.itextpdf.text.Image
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.PdfStamper
-import com.squareup.picasso.Picasso
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
@@ -39,8 +36,8 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
     lateinit var imageView :ImageView
     lateinit var imageView2 :ImageView
 
-    lateinit var createPdfButton1 :Button
-    lateinit var createPdfButton2 :Button
+    lateinit var showDialogBtn :Button
+    lateinit var createPdfBtn :Button
     lateinit var mSignaturePad:SignaturePad
     lateinit var KeeperSignedButton : Button
     lateinit var receiverSignedButton : Button
@@ -56,8 +53,8 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
         setContentView(R.layout.activity_main)
         imageView = findViewById<ImageView>(R.id.imageView3)
         imageView2 = findViewById<ImageView>(R.id.imageView2)
-        createPdfButton1 = findViewById<Button>(R.id.create_pdf_1)
-        createPdfButton2 = findViewById<Button>(R.id.create_pdf_2)
+        showDialogBtn = findViewById<Button>(R.id.show_dialog_btn)
+        createPdfBtn = findViewById<Button>(R.id.create_pdf)
         mSignaturePad = findViewById<SignaturePad>(R.id.signature_pad)
         KeeperSignedButton = findViewById<Button>(R.id.btn_start_signing)
         receiverSignedButton = findViewById<Button>(R.id.btn_signed)
@@ -102,13 +99,13 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
                 mSignaturePad.clear()
             }
         }
-        createPdfButton2.setOnClickListener {
+        createPdfBtn.setOnClickListener {
             getSignatureFromServer("1111")
         }
 
 
 
-        createPdfButton1.setOnClickListener {
+        showDialogBtn.setOnClickListener {
             // Show the dialog when needed, passing the text you want to display in the dialog
             val dialogText = "Dialog Title"
             val dialog = SignatureDialogFragment()
@@ -242,8 +239,10 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
         for (index in 1..reader.numberOfPages) {
             for ((key, bitmap) in bitmaps) {
                 val stream = ByteArrayOutputStream()
-                bitmap?.compress(Bitmap.CompressFormat.PNG, 100, stream)
+                bitmap?.compress(Bitmap.CompressFormat.PNG, 90, stream)
                 val image = Image.getInstance(stream.toByteArray())
+                image.compressionLevel = 0 // Adjust compression level (0 to 9, 0 being no compression)
+
                 if (key.equals( Constants.WORKER_KEY)){
                     val (x, y) = positions[0]
                     image.setAbsolutePosition(x, y)
@@ -264,6 +263,9 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
     }
 
     private fun getSignatureFromServer(orderNumber: String) {
+        imageView.setImageResource(R.drawable.ic_launcher_background)
+        imageView2.setImageResource(R.drawable.ic_launcher_background)
+
         RetrofitClient.hyperoneApiService().getSignature(orderNumber)
             .enqueue(object : Callback<SignatureResponse> {
                 override fun onResponse(
@@ -279,11 +281,11 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
                             val storekeeperSignature = signatureList[0].storekeeperSignature
                             imageView.setImageBitmap(stringToBitmap(receivingSignature))
                             imageView2.setImageBitmap(stringToBitmap(storekeeperSignature))
-                            val resizedReceivingSignature = Bitmap.createScaledBitmap(stringToBitmap(receivingSignature), 80, 80, false)
-                            val resizedStorekeeperSignature = Bitmap.createScaledBitmap(stringToBitmap(storekeeperSignature), 80, 80, false)
+                            val resizedReceivingSignature =resizeBitmapWithAspectRatio(stringToBitmap(receivingSignature))
+                            val resizedStorekeeperSignature = resizeBitmapWithAspectRatio(stringToBitmap(storekeeperSignature))
 
-                            signatureMap[Constants.KEEPER_KEY] = resizedReceivingSignature
-                            signatureMap[Constants.WORKER_KEY] = resizedStorekeeperSignature
+                            signatureMap[Constants.KEEPER_KEY] = resizedStorekeeperSignature
+                            signatureMap[Constants.WORKER_KEY] = resizedReceivingSignature
                             checkWriteStoragePermission()
 
                         }
@@ -298,6 +300,15 @@ class MainActivity : AppCompatActivity() , SignatureDialogFragment.SignatureDial
                     Log.d("TAG", "Handle the error: ${t.message}")
                 }
             })
+    }
+
+    fun resizeBitmapWithAspectRatio(originalBitmap: Bitmap, desiredWidth: Int = 80, desiredHeight: Int = 80): Bitmap {
+        val scaleX = desiredWidth.toFloat() / originalBitmap.width.toFloat()
+        val scaleY = desiredHeight.toFloat() / originalBitmap.height.toFloat()
+
+        val matrix = Matrix()
+        matrix.postScale(scaleX, scaleY)
+        return Bitmap.createBitmap(originalBitmap, 0, 0, originalBitmap.width, originalBitmap.height, matrix, true)
     }
 
     private fun bitmapToString(bitmap: Bitmap): String {
